@@ -9,17 +9,17 @@ interface Props {
 const ProtectedAdmin: React.FC<Props> = ({ children }) => {
   const { user } = useAuth();
 
-  // Not logged in → go home
+  // Not logged in
   if (!user) {
     return <Navigate to="/" replace />;
   }
 
-  // Logged in but not admin/system → go home
+  // Not admin/system
   if (!isSystemRole(user.role)) {
     return <Navigate to="/" replace />;
   }
 
-  // Admin allowed
+  // Allowed
   return <>{children}</>;
 };
 

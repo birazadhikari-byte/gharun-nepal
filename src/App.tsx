@@ -1,4 +1,4 @@
-import ProtectedAdmin from "./components/gharun/ProtectedAdmin";
+import ProtectedAdmin from "@/components/gharun/ProtectedAdmin";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 import AdminSetup from "@/components/gharun/AdminSetup";
-import AdminDashboard from "@/components/gharun/AdminDashboard"; // ✅ IMPORTANT
+import AdminDashboard from "@/components/gharun/AdminDashboard";
 
 const queryClient = new QueryClient();
 
@@ -32,14 +32,21 @@ const App = () => (
               path="/admin/setup"
               element={
                 <AdminSetup
-                  onComplete={() => window.location.href = "/admin/dashboard"}
-                  onCancel={() => window.location.href = "/"}
+                  onComplete={() => (window.location.href = "/admin/dashboard")}
+                  onCancel={() => (window.location.href = "/")}
                 />
               }
             />
 
-            {/* ✅ ADMIN DASHBOARD ROUTE (THIS FIXES 404) */}
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+            {/* 🔐 Protected Admin Dashboard */}
+            <Route
+              path="/admin/dashboard"
+              element={
+                <ProtectedAdmin>
+                  <AdminDashboard />
+                </ProtectedAdmin>
+              }
+            />
 
             {/* Not Found */}
             <Route path="*" element={<NotFound />} />
