@@ -27,7 +27,31 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+<<<<<<< Updated upstream
 # Editor directories
+=======
+# 🔴 CRITICAL - Environment Variables (NEVER COMMIT!)
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+dist-ssr
+*.local
+out
+build
+.next
+.vercel/output
+
+# Editor directories and files
+>>>>>>> Stashed changes
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -42,5 +66,13 @@ lerna-debug.log*
 coverage
 .nyc_output
 
+<<<<<<< Updated upstream
 # Supabase local
 supabase/.temp
+=======
+# Vercel
+.vercel
+
+# Supabase
+supabase/.temp
+>>>>>>> Stashed changes
