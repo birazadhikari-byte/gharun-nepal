@@ -1126,18 +1126,17 @@ export async function fetchMyJobInterests(providerId: string) {
 
 // ============ TERMS ACCEPTANCE (LEGAL COMPLIANCE) ============
 
-// Fallback version constants
 export const CURRENT_TERMS_VERSION = 'v1.0';
 export const CURRENT_PRIVACY_VERSION = 'v1.0';
 
-// Cache clearing utility
+// Cache clearing utility - ADD THIS FUNCTION! ⭐
 export function clearTermsConfigCache() {
   // No cache to clear in this simplified version
   console.log('Terms config cache cleared');
 }
 
 /**
- * Check if a user has accepted the current terms and privacy versions.
+ * Check if user has accepted terms
  */
 export async function checkTermsAcceptance(userId: string): Promise<boolean> {
   try {
@@ -1153,9 +1152,41 @@ export async function checkTermsAcceptance(userId: string): Promise<boolean> {
       console.error('Terms check error:', error);
       return false;
     }
-    return (data && data.length > 0) || false;
+    return data && data.length > 0;
   } catch (err) {
     console.error('Terms check exception:', err);
+    return false;
+  }
+}
+
+/**
+ * Record terms acceptance
+ */
+export async function recordTermsAcceptance(
+  userId: string,
+  role?: string
+): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from('terms_acceptance')
+      .insert([
+        {
+          user_id: userId,
+          terms_version: CURRENT_TERMS_VERSION,
+          privacy_version: CURRENT_PRIVACY_VERSION,
+          accepted_at: new Date().toISOString()
+        }
+      ]);
+
+    if (error) {
+      console.error('Terms record error:', error);
+      return false;
+    }
+
+    console.log('Terms acceptance recorded successfully');
+    return true;
+  } catch (err) {
+    console.error('Terms record exception:', err);
     return false;
   }
 }
@@ -1177,7 +1208,7 @@ export async function adminUpdateTermsVersion(data: {
 }) {
   const result = await adminApiCall('update_terms_version', data);
   // Clear the cached config so the new version takes effect immediately
-  clearTermsConfigCache();
+  clearTermsConfigCache();  // ✅ Now this function exists!
   return result;
 }
 
