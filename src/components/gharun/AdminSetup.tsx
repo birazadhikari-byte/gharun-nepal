@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Shield, CheckCircle, XCircle, Loader2, AlertTriangle, ArrowRight, Lock } from 'lucide-react';
+import { Shield, CheckCircle, XCircle, Loader2, AlertTriangle, ArrowRight, Lock, Key } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { upsertProfile } from '@/lib/database';
 
@@ -8,17 +8,29 @@ interface AdminSetupProps {
   onCancel: () => void;
 }
 
-type SetupStep = 'ready' | 'creating' | 'signing-in' | 'setting-profile' | 'success' | 'error' | 'already-exists';
+type SetupStep = 'secret' | 'ready' | 'creating' | 'signing-in' | 'setting-profile' | 'success' | 'error' | 'already-exists';
 
-const ADMIN_EMAIL = 'biraj@gharunepal.com';
-const ADMIN_PASSWORD = 'anita$!1A';
-const ADMIN_NAME = 'Biraj';
+// Environment variables बाट admin credentials लिने
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
+const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD;
+const ADMIN_NAME = import.meta.env.VITE_ADMIN_NAME;
+const ADMIN_SECRET = import.meta.env.VITE_ADMIN_SECRET;
 
 const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
-  const [step, setStep] = useState<SetupStep>('ready');
+  const [step, setStep] = useState<SetupStep>('secret');
+  const [inputSecret, setInputSecret] = useState('');
+  const [secretError, setSecretError] = useState('');
   const [statusMessages, setStatusMessages] = useState<Array<{ text: string; type: 'info' | 'success' | 'error' | 'warning' }>>([]);
   const [errorDetail, setErrorDetail] = useState('');
   const hasStarted = useRef(false);
+
+  // Check if environment variables are set
+  useEffect(() => {
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_NAME || !ADMIN_SECRET) {
+      setStep('error');
+      setErrorDetail('Admin setup is not configured. Please contact system administrator.');
+    }
+  }, []);
 
   const addMessage = (text: string, type: 'info' | 'success' | 'error' | 'warning' = 'info') => {
     setStatusMessages(prev => [...prev, { text, type }]);
@@ -28,21 +40,42 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.has('setup')) {
+      const secret = url.searchParams.get('setup');
       url.searchParams.delete('setup');
       window.history.replaceState({}, '', url.pathname);
+      
+      // If secret matches, proceed
+      if (secret === ADMIN_SECRET) {
+        setStep('ready');
+      }
     }
   }, []);
 
+  const handleSecretSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (inputSecret === ADMIN_SECRET) {
+      setStep('ready');
+      setSecretError('');
+    } else {
+      setSecretError('Invalid secret key');
+    }
+  };
+
   const runSetup = async () => {
     if (hasStarted.current) return;
-    hasStarted.current = true;
+    if (!ADMIN_EMAIL || !ADMIN_PASSWORD || !ADMIN_NAME) {
+      setStep('error');
+      addMessage('Admin configuration missing!', 'error');
+      return;
+    }
 
+    hasStarted.current = true;
     setStep('creating');
     setStatusMessages([]);
     addMessage('Starting admin account setup...', 'info');
 
     try {
-      // Step 1: Try to sign in first (account might already exist)
+      // Step 1: Try to sign in first
       addMessage(`Checking if ${ADMIN_EMAIL} already exists...`, 'info');
       const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
         email: ADMIN_EMAIL,
@@ -50,12 +83,11 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
       });
 
       if (!signInError && signInData.user) {
-        // Account already exists and credentials work
-        addMessage('Account already exists! Signing in...', 'success');
+        // Account already exists and works
+        addMessage('Admin account verified!', 'success');
         
-        // Ensure profile exists
         setStep('setting-profile');
-        addMessage('Ensuring admin profile is set up...', 'info');
+        addMessage('Updating admin profile...', 'info');
         try {
           await upsertProfile({
             id: signInData.user.id,
@@ -65,22 +97,18 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
           });
           addMessage('Admin profile confirmed.', 'success');
         } catch (profileErr: any) {
-          addMessage(`Profile note: ${profileErr.message || 'Could not update profile, but login works.'}`, 'warning');
+          addMessage(`Profile note: ${profileErr.message}`, 'warning');
         }
 
         setStep('success');
-        addMessage('Admin account is ready! Redirecting to dashboard...', 'success');
+        addMessage('Setup complete! Redirecting...', 'success');
         
-        setTimeout(() => {
-          onComplete();
-        }, 2000);
+        setTimeout(() => onComplete(), 2000);
         return;
       }
 
-      // Step 2: Account doesn't exist or wrong password - try to create it
-      addMessage('Account not found. Creating new admin account...', 'info');
-      setStep('creating');
-
+      // Step 2: Create new account
+      addMessage('Creating new admin account...', 'info');
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: ADMIN_EMAIL,
         password: ADMIN_PASSWORD,
@@ -93,104 +121,34 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
       });
 
       if (signUpError) {
-        // Check if it's a "user already registered" error
         if (signUpError.message.includes('already registered') || signUpError.message.includes('already exists')) {
           setStep('already-exists');
-          addMessage('Account already exists but password may be different.', 'warning');
-          addMessage('Please use the admin login page at /?ops=gharun2026 to sign in.', 'info');
-          addMessage('Or use "Forgot Password" to reset your password.', 'info');
-          setErrorDetail('The admin account already exists. Use /?ops=gharun2026 to access the login page.');
+          addMessage('Account exists but password may be different.', 'warning');
+          addMessage('Use "Forgot Password" to reset or sign in with correct password.', 'info');
           return;
         }
         throw new Error(signUpError.message);
       }
 
-      if (!signUpData.user) {
-        throw new Error('Signup returned no user data.');
-      }
+      if (!signUpData.user) throw new Error('No user data returned');
 
-      addMessage(`Account created for ${ADMIN_EMAIL}!`, 'success');
+      addMessage('Account created successfully!', 'success');
 
-      // Step 3: Check if we got a session (auto-confirmed)
-      if (signUpData.session) {
-        addMessage('Email auto-confirmed. Session active!', 'success');
-        
-        // Set up profile
-        setStep('setting-profile');
-        addMessage('Creating admin profile...', 'info');
-        try {
-          await upsertProfile({
-            id: signUpData.user.id,
-            full_name: ADMIN_NAME,
-            email: ADMIN_EMAIL,
-            role: 'admin',
-          });
-          addMessage('Admin profile created successfully.', 'success');
-        } catch (profileErr: any) {
-          addMessage(`Profile note: ${profileErr.message}`, 'warning');
-        }
-
-        setStep('success');
-        addMessage('Setup complete! Redirecting to admin dashboard...', 'success');
-        
-        setTimeout(() => {
-          onComplete();
-        }, 2000);
-        return;
-      }
-
-      // Step 4: No session - email confirmation might be required
-      // Try signing in anyway (some configs auto-confirm)
-      setStep('signing-in');
-      addMessage('Attempting to sign in with new credentials...', 'info');
-
-      // Small delay to allow any async confirmation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      const { data: retryData, error: retryError } = await supabase.auth.signInWithPassword({
+      // Step 3: Setup profile
+      setStep('setting-profile');
+      addMessage('Creating admin profile...', 'info');
+      
+      await upsertProfile({
+        id: signUpData.user.id,
+        full_name: ADMIN_NAME,
         email: ADMIN_EMAIL,
-        password: ADMIN_PASSWORD,
+        role: 'admin',
       });
 
-      if (!retryError && retryData.user) {
-        addMessage('Sign-in successful!', 'success');
-        
-        setStep('setting-profile');
-        addMessage('Setting up admin profile...', 'info');
-        try {
-          await upsertProfile({
-            id: retryData.user.id,
-            full_name: ADMIN_NAME,
-            email: ADMIN_EMAIL,
-            role: 'admin',
-          });
-          addMessage('Admin profile created.', 'success');
-        } catch (profileErr: any) {
-          addMessage(`Profile note: ${profileErr.message}`, 'warning');
-        }
-
-        setStep('success');
-        addMessage('Setup complete! Redirecting...', 'success');
-        
-        setTimeout(() => {
-          onComplete();
-        }, 2000);
-        return;
-      }
-
-      // Email confirmation is required
-      setStep('error');
-      addMessage('Account created but email confirmation is required.', 'warning');
-      addMessage(`Check ${ADMIN_EMAIL} inbox for a confirmation email.`, 'info');
-      addMessage('After confirming, go to /?ops=gharun2026 to sign in.', 'info');
-      setErrorDetail(
-        'Email confirmation is enabled on this project. ' +
-        'To fix this:\n\n' +
-        '1. Check biraj@gharunepal.com inbox and click the confirmation link, OR\n' +
-        '2. Go to Supabase Dashboard > Authentication > Settings and disable "Confirm email", OR\n' +
-        '3. Go to Supabase Dashboard > Authentication > Users and manually confirm the email.\n\n' +
-        'After confirming, use /?ops=gharun2026 to access the admin login.'
-      );
+      addMessage('Admin profile created!', 'success');
+      setStep('success');
+      
+      setTimeout(() => onComplete(), 1500);
 
     } catch (err: any) {
       setStep('error');
@@ -199,31 +157,64 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
     }
   };
 
-  const getStepIcon = (s: SetupStep) => {
-    switch (s) {
-      case 'ready': return <Shield className="w-8 h-8 text-blue-500" />;
-      case 'creating':
-      case 'signing-in':
-      case 'setting-profile':
-        return <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />;
-      case 'success': return <CheckCircle className="w-8 h-8 text-green-500" />;
-      case 'error': return <XCircle className="w-8 h-8 text-red-500" />;
-      case 'already-exists': return <AlertTriangle className="w-8 h-8 text-amber-500" />;
-    }
-  };
+  // Secret key input screen
+  if (step === 'secret') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-gradient-to-r from-red-600 to-red-700 px-8 py-8 text-center">
+              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
+                <Key className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white">Admin Setup Protected</h1>
+              <p className="text-red-200 text-sm mt-1">Enter secret key to continue</p>
+            </div>
 
-  const getStepTitle = (s: SetupStep) => {
-    switch (s) {
-      case 'ready': return 'Admin Account Setup';
-      case 'creating': return 'Creating Account...';
-      case 'signing-in': return 'Signing In...';
-      case 'setting-profile': return 'Setting Up Profile...';
-      case 'success': return 'Setup Complete!';
-      case 'error': return 'Setup Issue';
-      case 'already-exists': return 'Account Already Exists';
-    }
-  };
+            <div className="p-8">
+              <form onSubmit={handleSecretSubmit} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Setup Secret Key
+                  </label>
+                  <input
+                    type="password"
+                    value={inputSecret}
+                    onChange={(e) => setInputSecret(e.target.value)}
+                    placeholder="Enter secret key..."
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-red-500 focus:ring-0 transition-colors"
+                    autoFocus
+                  />
+                  {secretError && (
+                    <p className="text-xs text-red-600 mt-2">{secretError}</p>
+                  )}
+                </div>
 
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={onCancel}
+                    className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="flex-1 py-3 px-4 bg-red-600 text-white rounded-xl font-semibold text-sm hover:bg-red-700 transition-colors flex items-center justify-center gap-2"
+                  >
+                    <Key className="w-4 h-4" />
+                    Continue
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main setup screen
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -233,8 +224,8 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
             <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/20">
               <Lock className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-white">One-Time Admin Setup</h1>
-            <p className="text-blue-200 text-sm mt-1">Gharun Nepal - Secure Account Creation</p>
+            <h1 className="text-xl font-bold text-white">Admin Account Setup</h1>
+            <p className="text-blue-200 text-sm mt-1">Gharun Nepal - Secure Configuration</p>
           </div>
 
           <div className="p-8">
@@ -242,20 +233,33 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
             <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl mb-6">
               <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm text-amber-800 font-medium">One-Time Setup</p>
+                <p className="text-sm text-amber-800 font-medium">⚠️ Secure Setup</p>
                 <p className="text-xs text-amber-600 mt-1">
-                  This will create the admin account for <strong>{ADMIN_EMAIL}</strong>. 
-                  This page is only accessible via a secret URL and should only be used once.
+                  This is a one-time setup page. Admin credentials are stored securely in environment variables.
                 </p>
               </div>
             </div>
 
             {/* Status Area */}
             <div className="flex items-center gap-3 mb-6">
-              {getStepIcon(step)}
+              {step === 'ready' && <Shield className="w-8 h-8 text-blue-500" />}
+              {(step === 'creating' || step === 'signing-in' || step === 'setting-profile') && 
+                <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />}
+              {step === 'success' && <CheckCircle className="w-8 h-8 text-green-500" />}
+              {step === 'error' && <XCircle className="w-8 h-8 text-red-500" />}
+              {step === 'already-exists' && <AlertTriangle className="w-8 h-8 text-amber-500" />}
+              
               <div>
-                <h2 className="font-semibold text-gray-900">{getStepTitle(step)}</h2>
-                <p className="text-sm text-gray-500">
+                <h2 className="font-semibold text-gray-900">
+                  {step === 'ready' && 'Ready to Setup'}
+                  {step === 'creating' && 'Creating Account...'}
+                  {step === 'signing-in' && 'Signing In...'}
+                  {step === 'setting-profile' && 'Setting Up Profile...'}
+                  {step === 'success' && 'Setup Complete!'}
+                  {step === 'error' && 'Setup Failed'}
+                  {step === 'already-exists' && 'Account Already Exists'}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
                   {step === 'ready' && 'Click the button below to create the admin account.'}
                   {step === 'creating' && 'Please wait while the account is being created...'}
                   {step === 'signing-in' && 'Attempting to sign in with the new credentials...'}
@@ -300,31 +304,6 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
               </div>
             )}
 
-            {/* Account Details */}
-            {step === 'ready' && (
-              <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 mb-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-3">Account Details</h3>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-500">Email:</span>
-                    <span className="text-xs font-mono text-gray-900">{ADMIN_EMAIL}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-500">Password:</span>
-                    <span className="text-xs font-mono text-gray-900">{'*'.repeat(ADMIN_PASSWORD.length)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-500">Role:</span>
-                    <span className="text-xs font-mono text-gray-900">System Admin</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-xs text-gray-500">Name:</span>
-                    <span className="text-xs font-mono text-gray-900">{ADMIN_NAME}</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Action Buttons */}
             <div className="flex gap-3">
               {step === 'ready' && (
@@ -340,56 +319,32 @@ const AdminSetup: React.FC<AdminSetupProps> = ({ onComplete, onCancel }) => {
                     className="flex-1 py-3 px-4 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
                   >
                     <Shield className="w-4 h-4" />
-                    Create Admin Account
+                    Setup Admin
                   </button>
                 </>
-              )}
-
-              {(step === 'creating' || step === 'signing-in' || step === 'setting-profile') && (
-                <div className="flex-1 py-3 px-4 bg-gray-100 text-gray-400 rounded-xl font-medium text-sm text-center cursor-not-allowed flex items-center justify-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </div>
               )}
 
               {step === 'success' && (
                 <button
                   onClick={onComplete}
-                  className="flex-1 py-3 px-4 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+                  className="w-full py-3 px-4 bg-green-600 text-white rounded-xl font-semibold text-sm hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  Go to Admin Dashboard
+                  Go to Dashboard
                   <ArrowRight className="w-4 h-4" />
                 </button>
               )}
 
               {(step === 'error' || step === 'already-exists') && (
-                <>
-                  <button
-                    onClick={onCancel}
-                    className="flex-1 py-3 px-4 border-2 border-gray-200 text-gray-600 rounded-xl font-medium text-sm hover:bg-gray-50 transition-colors"
-                  >
-                    Go Home
-                  </button>
-                  <button
-                    onClick={() => {
-                      // Navigate to admin login
-                      window.location.href = '/?ops=gharun2026';
-                    }}
-                    className="flex-1 py-3 px-4 bg-gray-900 text-white rounded-xl font-semibold text-sm hover:bg-gray-800 transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Lock className="w-4 h-4" />
-                    Go to Admin Login
-                  </button>
-                </>
+                <button
+                  onClick={onCancel}
+                  className="w-full py-3 px-4 bg-gray-600 text-white rounded-xl font-semibold text-sm hover:bg-gray-700 transition-colors"
+                >
+                  Back to Home
+                </button>
               )}
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <p className="text-xs text-gray-500 text-center mt-6">
-          &copy; 2026 Gharun Nepal. This setup page is confidential.
-        </p>
       </div>
     </div>
   );
