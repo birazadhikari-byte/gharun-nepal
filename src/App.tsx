@@ -4,9 +4,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/theme-provider";
+
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
+
 import AdminSetup from "@/components/gharun/AdminSetup";
+import AdminDashboard from "@/components/gharun/AdminDashboard"; // ✅ IMPORTANT
 
 const queryClient = new QueryClient();
 
@@ -16,21 +19,33 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
+
         <BrowserRouter>
           <Routes>
+
+            {/* Home */}
             <Route path="/" element={<Index />} />
-            <Route 
-              path="/admin/setup" 
+
+            {/* Admin Setup */}
+            <Route
+              path="/admin/setup"
               element={
-                <AdminSetup 
-                  onComplete={() => window.location.href = '/admin/dashboard'}
-                  onCancel={() => window.location.href = '/'}
+                <AdminSetup
+                  onComplete={() => window.location.href = "/admin/dashboard"}
+                  onCancel={() => window.location.href = "/"}
                 />
-              } 
+              }
             />
+
+            {/* ✅ ADMIN DASHBOARD ROUTE (THIS FIXES 404) */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
+
+            {/* Not Found */}
             <Route path="*" element={<NotFound />} />
+
           </Routes>
         </BrowserRouter>
+
       </TooltipProvider>
     </QueryClientProvider>
   </ThemeProvider>
