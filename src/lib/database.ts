@@ -1124,78 +1124,31 @@ export async function fetchMyJobInterests(providerId: string) {
   return data || [];
 }
 
-
 // ============ TERMS ACCEPTANCE (LEGAL COMPLIANCE) ============
 
-// Fallback version constants (used if DB config fetch fails)
+// Fallback version constants
 export const CURRENT_TERMS_VERSION = 'v1.0';
 export const CURRENT_PRIVACY_VERSION = 'v1.0';
 
-// Cache for dynamic version config
-let _cachedTermsConfig: { terms_version: string; privacy_version: string } | null = null;
-let _configFetchedAt = 0;
-const CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-/**
- * Fetch current terms/privacy versions from the database config table.
- * Caches for 5 minutes to avoid excessive queries.
- */
-export async function fetchTermsVersionConfig(): Promise<{ terms_version: string; privacy_version: string }> {
-  const now = Date.now();
-  if (_cachedTermsConfig && (now - _configFetchedAt) < CONFIG_CACHE_TTL) {
-    return _cachedTermsConfig;
-  }
-  try {
-    const { data, error } = await supabase.from('terms_version_config')
-      .select('terms_version, privacy_version')
-      .limit(1)
-      .single();
-    if (error || !data) {
-      return { terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION };
-    }
-    _cachedTermsConfig = { terms_version: data.terms_version, privacy_version: data.privacy_version };
-    _configFetchedAt = now;
-    return _cachedTermsConfig;
-  } catch {
-    return { terms_version: CURRENT_TERMS_VERSION, privacy_version: CURRENT_PRIVACY_VERSION };
-  }
-}
-
-/** Clear the cached terms config (call after admin updates version) */
+// Cache clearing utility
 export function clearTermsConfigCache() {
-  _cachedTermsConfig = null;
-  _configFetchedAt = 0;
-}
-
-export interface TermsAcceptanceRecord {
-  id: string;
-  user_id: string;
-  role: string;
-  accepted_terms: boolean;
-  accepted_privacy: boolean;
-  terms_version: string;
-  privacy_version: string;
-  ip_address: string | null;
-  user_agent: string | null;
-  accepted_at: string;
-  created_at: string;
+  // No cache to clear in this simplified version
+  console.log('Terms config cache cleared');
 }
 
 /**
  * Check if a user has accepted the current terms and privacy versions.
- * Now dynamically fetches the current version from the DB config.
  */
 export async function checkTermsAcceptance(userId: string): Promise<boolean> {
   try {
-    const config = await fetchTermsVersionConfig();
-    const { data, error } = await supabase.from('terms_acceptance')
+    const { data, error } = await supabase
+      .from('terms_acceptance')
       .select('id')
       .eq('user_id', userId)
-      .eq('terms_version', config.terms_version)
-      .eq('privacy_version', config.privacy_version)
-      .eq('accepted_terms', true)
-      .eq('accepted_privacy', true)
+      .eq('terms_version', CURRENT_TERMS_VERSION)
+      .eq('privacy_version', CURRENT_PRIVACY_VERSION)
       .limit(1);
+
     if (error) {
       console.error('Terms check error:', error);
       return false;
@@ -1205,52 +1158,6 @@ export async function checkTermsAcceptance(userId: string): Promise<boolean> {
     console.error('Terms check exception:', err);
     return false;
   }
-}
-
-/**
- * Record that a user has accepted the current terms and privacy policy.
- * Uses upsert to handle the unique constraint (user_id + versions).
- */
-export async function recordTermsAcceptance(
-  userId: string,
-  role: string,
-): Promise<TermsAcceptanceRecord | null> {
-  try {
-    const config = await fetchTermsVersionConfig();
-    const { data, error } = await supabase.from('terms_acceptance').upsert({
-      user_id: userId,
-      role: role,
-      accepted_terms: true,
-      accepted_privacy: true,
-      terms_version: config.terms_version,
-      privacy_version: config.privacy_version,
-      ip_address: null,
-      user_agent: navigator.userAgent?.slice(0, 500) || null,
-      accepted_at: new Date().toISOString(),
-    }, {
-      onConflict: 'user_id,terms_version,privacy_version',
-    }).select().single();
-    if (error) {
-      console.error('Terms record error:', error);
-      return null;
-    }
-    return data;
-  } catch (err) {
-    console.error('Terms record exception:', err);
-    return null;
-  }
-}
-
-/**
- * Fetch all terms acceptance records for a user (for audit trail).
- */
-export async function fetchTermsAcceptanceHistory(userId: string): Promise<TermsAcceptanceRecord[]> {
-  const { data, error } = await supabase.from('terms_acceptance')
-    .select('*')
-    .eq('user_id', userId)
-    .order('accepted_at', { ascending: false });
-  if (error) throw error;
-  return data || [];
 }
 
 // ============ ADMIN: TERMS ACCEPTANCE REPORT ============
