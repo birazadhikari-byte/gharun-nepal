@@ -1,3 +1,23 @@
+# 🔴 CRITICAL - NEVER COMMIT THESE!
+.env
+.env.local
+.env.production
+.env.development
+*.env
+
+# Dependencies
+node_modules
+package-lock.json
+
+# Build outputs
+dist
+dist-ssr
+*.local
+out
+build
+.next
+.vercel
+
 # Logs
 logs
 *.log
@@ -7,12 +27,7 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
-
-# Editor directories and files
+# Editor directories
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,3 +37,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Testing
+coverage
+.nyc_output
+
+# Supabase local
+supabase/.temp
