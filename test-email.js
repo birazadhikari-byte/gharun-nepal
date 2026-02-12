@@ -1,5 +1,4 @@
-// test-email.js
-const { createClient } = require('@supabase/supabase-js')
+import { createClient } from '@supabase/supabase-js'
 
 const supabase = createClient(
   'https://mwbkntnrvurifwmgyfea.supabase.co',
@@ -15,8 +14,7 @@ async function testEmail() {
       subject: '🧪 TEST EMAIL - घरन नेपाल',
       body: `नमस्ते बिराज जी,
 
-यो TEST EMAIL हो। 
-यदि यो email पुगेको छ भने, 
+यो TEST EMAIL हो!
 तपाईंको Email System COMPLETE भयो! 🎉
 
 धन्यवाद,
