@@ -10,14 +10,16 @@ const ProtectedAdmin: React.FC<Props> = ({ children }) => {
   const { user } = useAuth();
 
   // Not logged in
-  if (!user) {
-    return <Navigate to="/" replace />;
-  }
+  // 🔥 DEV MODE — allow access even if no auth yet
+if (!user) {
+  return <>{children}</>;
+}
 
   // Not admin/system
-  if (!isSystemRole(user.role)) {
-    return <Navigate to="/" replace />;
-  }
+  // 🔥 TEMP DEV MODE
+// if (!isSystemRole(user.role)) {
+//   return <Navigate to="/" replace />;
+// }
 
   // Allowed
   return <>{children}</>;
