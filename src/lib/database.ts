@@ -86,13 +86,19 @@ export async function adminReviewChangeRequest(id: string, approved: boolean) {
 
 // ============ ADMIN: SERVICE REQUESTS ============
 
-export async function adminListRequests() {
-  return adminApiCall('list_requests');
-}
+export const adminListRequests = async () => {
 
-export async function adminUpdateRequest(id: string, updates: Record<string, any>) {
-  return adminApiCall('update_request', { id, updates });
-}
+  const { data, error } = await supabase.functions.invoke("admin-api", {
+    body: { action: "list_orders" }   // ⭐ THIS IS THE FIX
+  });
+
+  if (error) {
+    console.error("adminListRequests error:", error);
+    return [];
+  }
+
+  return data?.data || [];
+};
 
 // ============ ADMIN: STATS ============
 
