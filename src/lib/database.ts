@@ -88,16 +88,17 @@ export async function adminReviewChangeRequest(id: string, approved: boolean) {
 
 export const adminListRequests = async () => {
 
-  const { data, error } = await supabase.functions.invoke("admin-api", {
-    body: { action: "list_orders" }   // ⭐ THIS IS THE FIX
-  });
+  const { data, error } = await supabase
+    .from("service_requests")
+    .select("*")
+    .order("id", { ascending: false });
 
   if (error) {
     console.error("adminListRequests error:", error);
     return [];
   }
 
-  return data?.data || [];
+  return data || [];
 };
 
 // ============ ADMIN: STATS ============
