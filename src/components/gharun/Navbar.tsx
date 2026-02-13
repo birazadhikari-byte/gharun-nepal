@@ -100,9 +100,11 @@ const Navbar: React.FC<NavbarProps> = ({ currentView, onNavigate, user, onLogin,
         <div className="flex items-center justify-between h-16 lg:h-18">
           {/* Logo */}
           <button onClick={() => handleNav('home')} className="flex items-center gap-2 group">
-            <div className="w-9 h-9 bg-[#C8102E] rounded-lg flex items-center justify-center shadow-md group-hover:shadow-lg transition-shadow">
-              <Shield className="w-5 h-5 text-white" />
-            </div>
+  <img
+    src="/gharun-logo.png"
+    alt="घरन नेपाल"
+    className="h-10 w-auto object-contain"
+  />
             <div className="flex flex-col">
               <span className="text-lg font-bold text-gray-900 leading-tight">{t.brand.en}</span>
               <span className="text-[10px] text-[#C8102E] font-medium leading-none -mt-0.5">{t.brand.np}</span>
