@@ -1,56 +1,26 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-  Shield, Users, ClipboardList, CheckCircle2, Clock,
-  Phone, MessageSquare, UserCheck, XCircle, ChevronDown,
-  TrendingUp, MapPin, Calendar, RefreshCw, MessageCircle,
-  Star, Eye, EyeOff, Trash2, Plus, Save, X, FileText,
-  History, Search, BarChart3, Car, Key, Layers,
-  ShoppingCart, CreditCard, DollarSign, Lock, Download, Banknote, Mail,
-  Target
-} from 'lucide-react';
-
-import { categories, JHAPA_AREAS, formatLocation, extractAreaName, statusColors, statusLabels } from '@/data/gharunData';
+import React, { useState, useEffect, useCallback } from "react";
+import { Shield, RefreshCw, ShoppingCart, Users, BarChart3, Key } from "lucide-react";
 
 import {
-  adminListAllProviders, adminCreateProvider, adminUpdateProvider,
-  adminVerifyProvider, adminSuspendProvider, adminHideProvider, adminDeleteProvider,
-  adminListRequests, adminUpdateRequest, adminListSubmissions, adminReviewSubmission,
-  adminListChangeRequests, adminReviewChangeRequest, adminGetStats, adminGetAuditLogs,
-  sendWhatsAppNotification, adminSetRequestCost, adminMarkRequestPaymentReceived, adminListReceipts
-} from '@/lib/database';
+  adminListRequests,
+  adminListAllProviders,
+  adminGetStats,
+  adminUpdateRequest,
+} from "@/lib/database";
 
-import { openReceiptWindow } from '@/lib/receiptGenerator';
-import { useAuth, isSystemRole } from '@/contexts/AuthContext';
+import { useAuth, isSystemRole } from "@/contexts/AuthContext";
 
-import RideAdminPanel from '@/components/gharun/RideAdminPanel';
-import InternalAccessPanel from '@/components/gharun/InternalAccessPanel';
-import OverviewAnalytics from '@/components/gharun/OverviewAnalytics';
-import CatalogPanel from '@/components/gharun/CatalogPanel';
-import OrderManagementPanel from '@/components/gharun/OrderManagementPanel';
-import UserManagementPanel from '@/components/gharun/UserManagementPanel';
-import PaymentPanel from '@/components/gharun/PaymentPanel';
-import ChangePasswordPanel from '@/components/gharun/ChangePasswordPanel';
-import PricingPanel from '@/components/gharun/PricingPanel';
-import EmailNotificationsPanel from '@/components/gharun/EmailNotificationsPanel';
-import ConnectPanel from '@/components/gharun/ConnectPanel';
-import TermsReportPanel from '@/components/gharun/TermsReportPanel';
+import OverviewAnalytics from "@/components/gharun/OverviewAnalytics";
+import UserManagementPanel from "@/components/gharun/UserManagementPanel";
 
-type AdminTab =
-  'overview' | 'connect' | 'orders' | 'users' | 'providers' |
-  'requests' | 'submissions' | 'changes' | 'audit' | 'rides' |
-  'catalog' | 'payments' | 'pricing' | 'access' | 'security' |
-  'emails' | 'terms';
+type AdminTab = "overview" | "orders" | "users" | "access";
 
 const AdminDashboard: React.FC = () => {
-
   const { user } = useAuth();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [activeTab, setActiveTab] = useState<AdminTab>("overview");
   const [requests, setRequests] = useState<any[]>([]);
   const [dbProviders, setDbProviders] = useState<any[]>([]);
-  const [submissions, setSubmissions] = useState<any[]>([]);
-  const [changeRequests, setChangeRequests] = useState<any[]>([]);
-  const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [stats, setStats] = useState<any>(null);
 
   const [loading, setLoading] = useState(true);
@@ -59,7 +29,7 @@ const AdminDashboard: React.FC = () => {
   const isSystem = user ? isSystemRole(user.role) : false;
 
   // ===============================
-  // 🧠 GOD MODE DATA LOADER
+  // LOAD DATA
   // ===============================
   const loadData = useCallback(async () => {
     try {
@@ -72,36 +42,43 @@ const AdminDashboard: React.FC = () => {
       setRequests(reqData || []);
       setDbProviders(provData || []);
       if (statsData) setStats(statsData);
-
     } catch (err) {
-      console.error('Admin load error:', err);
+      console.error("Admin load error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
   }, []);
 
-  // 🔥 GOD MODE AUTO REFRESH (VERY IMPORTANT)
+  // AUTO REFRESH
   useEffect(() => {
-
     loadData();
-
     const interval = setInterval(() => {
       loadData();
-    }, 8000); // refresh every 8 sec
+    }, 8000);
 
     return () => clearInterval(interval);
-
   }, [loadData]);
 
-  // =======================================
-  // BASIC REFRESH BUTTON
-  // =======================================
+  // REFRESH BUTTON
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
   };
 
+  // ===============================
+  // STATUS UPDATE
+  // ===============================
+  const updateStatus = async (id: string, status: string) => {
+    try {
+      await adminUpdateRequest(id, { status });
+      loadData();
+    } catch (err) {
+      console.error("Status update failed:", err);
+    }
+  };
+
+  // LOADING SCREEN
   if (loading) {
     return (
       <section className="py-20 bg-gray-50 min-h-screen flex items-center justify-center">
@@ -113,25 +90,6 @@ const AdminDashboard: React.FC = () => {
     );
   }
 
-  const tabDefs = [
-    { id: 'overview', label: 'Overview', icon: BarChart3, activeColor: 'bg-purple-600' },
-    { id: 'connect', label: 'Connect', icon: Target, activeColor: 'bg-red-600' },
-    { id: 'orders', label: 'Orders', icon: ShoppingCart, activeColor: 'bg-blue-600' },
-    { id: 'users', label: 'Users', icon: Users, activeColor: 'bg-indigo-600' },
-    { id: 'providers', label: 'Providers', icon: UserCheck, activeColor: 'bg-green-600' },
-    { id: 'payments', label: 'Payments', icon: DollarSign, activeColor: 'bg-emerald-600' },
-    { id: 'requests', label: 'Requests', icon: ClipboardList, activeColor: 'bg-orange-600' },
-    { id: 'submissions', label: 'Submissions', icon: FileText, activeColor: 'bg-cyan-600' },
-    { id: 'changes', label: 'Changes', icon: ChevronDown, activeColor: 'bg-pink-600' },
-    { id: 'catalog', label: 'Catalog', icon: Layers, activeColor: 'bg-teal-600' },
-    { id: 'pricing', label: 'Pricing', icon: DollarSign, activeColor: 'bg-rose-600' },
-    { id: 'rides', label: 'Rides', icon: Car, activeColor: 'bg-amber-600' },
-    { id: 'emails', label: 'Emails', icon: Mail, activeColor: 'bg-purple-600' },
-    { id: 'terms', label: 'Terms', icon: Shield, activeColor: 'bg-violet-600' },
-    { id: 'audit', label: 'Audit', icon: History, activeColor: 'bg-gray-700' },
-    { id: 'security', label: 'Security', icon: Lock, activeColor: 'bg-rose-700' },
-  ] as const;
-
   return (
     <section className="py-8 bg-gray-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4">
@@ -139,93 +97,82 @@ const AdminDashboard: React.FC = () => {
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Shield className="w-6 h-6 text-purple-600"/>
+            <Shield className="w-6 h-6 text-purple-600" />
             <h1 className="text-2xl font-extrabold">Admin Dashboard</h1>
           </div>
 
           <button onClick={handleRefresh} className="p-2 bg-white border rounded-lg">
-            <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin':''}`} />
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
           </button>
         </div>
 
         {/* TABS */}
         <div className="flex gap-1 flex-wrap mb-6 bg-white p-2 rounded-xl border">
-          {tabDefs.map(tab=>{
-            const Icon = tab.icon;
-            return(
-              <button
-                key={tab.id}
-                onClick={()=>setActiveTab(tab.id as AdminTab)}
-                className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1 ${
-                  activeTab===tab.id ? `${tab.activeColor} text-white` : 'text-gray-500 hover:bg-gray-100'
-                }`}>
-                <Icon className="w-3.5 h-3.5"/>
-                {tab.label}
-              </button>
-            )
-          })}
+          <button onClick={() => setActiveTab("overview")} className="px-3 py-2 text-xs font-semibold">
+            <BarChart3 className="w-4 h-4 inline mr-1" /> Overview
+          </button>
+
+          <button onClick={() => setActiveTab("orders")} className="px-3 py-2 text-xs font-semibold">
+            <ShoppingCart className="w-4 h-4 inline mr-1" /> Orders
+          </button>
+
+          <button onClick={() => setActiveTab("users")} className="px-3 py-2 text-xs font-semibold">
+            <Users className="w-4 h-4 inline mr-1" /> Users
+          </button>
 
           {isSystem && (
-            <button
-              onClick={()=>setActiveTab('access')}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold ${
-                activeTab==='access' ? 'bg-red-700 text-white':'text-gray-500 hover:bg-gray-100'
-              }`}>
-              <Key className="w-3.5 h-3.5"/> Access
+            <button onClick={() => setActiveTab("access")} className="px-3 py-2 text-xs font-semibold">
+              <Key className="w-4 h-4 inline mr-1" /> Access
             </button>
           )}
         </div>
 
         {/* TAB CONTENT */}
 
-{activeTab === 'orders' && (
-  <div className="space-y-3">
-    {(requests?.length ?? 0) === 0 ? (
-      <div className="bg-white rounded-xl border p-10 text-center">
-        <p className="font-semibold text-gray-600">No Orders Found</p>
-      </div>
-    ) : (
-      (requests ?? []).map((req) => (
-        <div key={req.id} className="bg-white rounded-xl border p-4">
-          <p className="font-bold">{req.request_number}</p>
-          <p className="text-sm text-gray-500">
-            {req.client_name} • {req.location}
-          </p>
-        </div>
-      ))
-    )}
-  </div>
-)}
-        {activeTab==='users' && <UserManagementPanel/>}
-        {activeTab==='payments' && <PaymentPanel/>}
-        {activeTab==='catalog' && <CatalogPanel/>}
-        {activeTab==='pricing' && <PricingPanel/>}
-        {activeTab==='rides' && <RideAdminPanel/>}
-        {activeTab==='security' && <ChangePasswordPanel/>}
-        {activeTab==='emails' && <EmailNotificationsPanel/>}
-        {activeTab==='connect' && <ConnectPanel/>}
-        {activeTab==='terms' && <TermsReportPanel/>}
-        {activeTab==='access' && isSystem && <InternalAccessPanel/>}
+        {activeTab === "overview" && <OverviewAnalytics />}
 
-        {/* 🔥 REQUESTS TAB (LIVE DATA) */}
-        {activeTab==='requests' && (
+        {/* ================= ORDERS ================= */}
+        {activeTab === "orders" && (
           <div className="space-y-3">
-            {requests.length===0 ? (
+            {(requests?.length ?? 0) === 0 ? (
               <div className="bg-white rounded-xl border p-10 text-center">
-                <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3"/>
-                <p className="font-semibold text-gray-600">No Requests Yet</p>
+                <p className="font-semibold text-gray-600">No Orders Found</p>
               </div>
-            ):(
-              requests.map(req=>(
-                <div key={req.id} className="bg-white rounded-xl border p-4">
-                  <div className="flex justify-between">
-                    <div>
-                      <p className="font-bold">{req.request_number}</p>
-                      <p className="text-xs text-gray-500">{req.client_name} • {req.location}</p>
-                    </div>
-                    <span className={`px-2 py-1 text-xs rounded-full ${statusColors[req.status]||''}`}>
-                      {statusLabels[req.status]||req.status}
-                    </span>
+            ) : (
+              (requests ?? []).map((req) => (
+                <div key={req.id} className="bg-white rounded-xl border p-4 space-y-2">
+                  <p className="font-bold">{req.request_number}</p>
+
+                  <p className="text-sm text-gray-500">
+                    {req.client_name} • {req.location}
+                  </p>
+
+                  <p className="text-xs font-semibold">
+                    Status: {req.status || "pending"}
+                  </p>
+
+                  {/* ADMIN CONTROLS */}
+                  <div className="flex gap-2 mt-2">
+                    <button
+                      onClick={() => updateStatus(req.id, "assigned")}
+                      className="px-2 py-1 text-xs bg-blue-500 text-white rounded"
+                    >
+                      Assign
+                    </button>
+
+                    <button
+                      onClick={() => updateStatus(req.id, "in_progress")}
+                      className="px-2 py-1 text-xs bg-orange-500 text-white rounded"
+                    >
+                      Start Job
+                    </button>
+
+                    <button
+                      onClick={() => updateStatus(req.id, "completed")}
+                      className="px-2 py-1 text-xs bg-green-600 text-white rounded"
+                    >
+                      Complete
+                    </button>
                   </div>
                 </div>
               ))
@@ -233,6 +180,7 @@ const AdminDashboard: React.FC = () => {
           </div>
         )}
 
+        {activeTab === "users" && <UserManagementPanel />}
       </div>
     </section>
   );

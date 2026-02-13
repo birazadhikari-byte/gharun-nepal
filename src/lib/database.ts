@@ -1,5 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
+
 // ============ ADMIN API HELPER ============
 async function adminApiCall(action: string, data: Record<string, any> = {}) {
   const { data: result, error } = await supabase.functions.invoke('admin-api', {
@@ -8,6 +9,23 @@ async function adminApiCall(action: string, data: Record<string, any> = {}) {
   if (error) throw new Error(error.message || 'Admin API call failed');
   if (result?.error) throw new Error(result.error);
   return result?.data;
+}
+
+// ===============================
+// ADMIN UPDATE REQUEST STATUS
+// ===============================
+export async function adminUpdateRequest(id: string, data: any) {
+  const { error } = await supabase
+    .from('service_requests')
+    .update(data)
+    .eq('id', id);
+
+  if (error) {
+    console.error("adminUpdateRequest error:", error);
+    throw error;
+  }
+
+  return true;
 }
 
 // ============ PROVIDERS (PUBLIC - READ ONLY) ============
