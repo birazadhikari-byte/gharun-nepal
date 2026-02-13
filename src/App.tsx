@@ -15,41 +15,36 @@ import AdminDashboard from "@/components/gharun/AdminDashboard";
 
 const queryClient = new QueryClient();
 
-const App = () => {
-  return (
-    <AuthProvider>
-      <ThemeProvider defaultTheme="light">
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
+const App = () => (
+  <AuthProvider>
+    <ThemeProvider defaultTheme="light">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
 
-            <BrowserRouter>
-              <Routes>
+          <BrowserRouter>
+            <Routes>
 
-                {/* HOME */}
-                <Route path="/" element={<Index />} />
+              <Route path="/" element={<Index />} />
 
-                {/* ADMIN DASHBOARD */}
-                <Route
-                  path="/admin/dashboard"
-                  element={
-                    <ProtectedAdmin>
-                      <AdminDashboard />
-                    </ProtectedAdmin>
-                  }
-                />
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedAdmin>
+                    <AdminDashboard />
+                  </ProtectedAdmin>
+                }
+              />
 
-                {/* 404 */}
-                <Route path="*" element={<NotFound />} />
+              <Route path="*" element={<NotFound />} />
 
-              </Routes>
-            </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
 
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ThemeProvider>
-    </AuthProvider>
-  );
-};  
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </AuthProvider>
+);  
 export default App;
