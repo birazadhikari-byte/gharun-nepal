@@ -176,17 +176,16 @@ const AdminDashboard: React.FC = () => {
           )}
         </div>
 
-        {/* =================== TAB CONTENT =================== */}
+        {/* TAB CONTENT */}
 
-        {activeTab==='overview' && <OverviewAnalytics/>}
-        {activeTab==='orders' && (
+{activeTab === 'orders' && (
   <div className="space-y-3">
-    {requests.length === 0 ? (
+    {(requests?.length ?? 0) === 0 ? (
       <div className="bg-white rounded-xl border p-10 text-center">
         <p className="font-semibold text-gray-600">No Orders Found</p>
       </div>
     ) : (
-      requests.map(req => (
+      (requests ?? []).map((req) => (
         <div key={req.id} className="bg-white rounded-xl border p-4">
           <p className="font-bold">{req.request_number}</p>
           <p className="text-sm text-gray-500">
