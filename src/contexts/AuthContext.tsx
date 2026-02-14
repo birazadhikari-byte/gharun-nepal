@@ -63,7 +63,10 @@ export const useAuth = () => {
   }
   return ctx;
 };
-
+export const isInternalRole = (role?: string) => {
+  if (!role) return false;
+  return ['admin', 'system', 'core', 'control', 'ops'].includes(role);
+};
 /* =====================================================
    PROVIDER
 ===================================================== */
