@@ -242,4 +242,25 @@ export const fetchStats = async () => {
       rating: 4.8,
     };
   }
+};// ========================================
+// FETCH REQUEST BY NUMBER (StatusTracker)
+// ========================================
+export const fetchRequestByNumber = async (requestNumber: string) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_requests') // your requests table
+      .select('*')
+      .eq('request_number', requestNumber)
+      .single();
+
+    if (error) {
+      console.warn('fetchRequestByNumber:', error.message);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.warn('fetchRequestByNumber crash:', err);
+    return null;
+  }
 };
