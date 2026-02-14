@@ -421,4 +421,69 @@ export const submitProviderRegistration = async (
   return {
     success: true,
   };
-};
+};/* =====================================================
+   🚗 GHARUN CONNECT — RIDE CONNECTOR (SAFE MVP)
+===================================================== */
+
+export const fetchVehicleTypes = async () => {
+  try {
+    const { data } = await supabase
+      .from('ride_vehicle_types')
+      .select('*')
+      .eq('enabled', true)
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export const fetchServiceAreas = async () => {
+  try {
+    const { data } = await supabase
+      .from('ride_service_areas')
+      .select('*')
+      .eq('enabled', true)
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export const fetchActiveRideDrivers = async (
+  areaId?: string,
+  vehicleTypeId?: string
+) => {
+  try {
+    let query = supabase
+      .from('ride_drivers')
+      .select(`
+        *,
+        ride_vehicle_types(name),
+        ride_service_areas(area_name)
+      `)
+      .eq('available', true)
+
+    if (areaId) query = query.eq('area_id', areaId)
+    if (vehicleTypeId) query = query.eq('vehicle_type_id', vehicleTypeId)
+
+    const { data } = await query
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export const createRideRequest = async (payload: any) => {
+  try {
+    const request_number = 'GN-' + Date.now()
+
+    // SAFE MVP (no DB insert yet)
+    console.log('🚗 Ride request:', payload)
+
+    return { request_number }
+  } catch {
+    return { request_number: 'GN-' + Date.now() }
+  }
+}
