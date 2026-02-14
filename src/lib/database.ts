@@ -186,4 +186,17 @@ export const resetPassword = async (
     console.error("resetPassword error:", err);
     return { success: false };
   }
+};// ===============================
+// EMAIL VERIFICATION (MVP SAFE)
+// ===============================
+export const requestEmailVerification = async (email: string) => {
+  try {
+    console.log("Request email verification:", email);
+
+    // MVP placeholder
+    return { success: true };
+  } catch (err) {
+    console.error("requestEmailVerification error:", err);
+    return { success: false };
+  }
 };
