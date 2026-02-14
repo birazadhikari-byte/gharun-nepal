@@ -105,18 +105,22 @@ export async function adminReviewChangeRequest(id: string, approved: boolean) {
 // ============ ADMIN: SERVICE REQUESTS ============
 
 export const adminListRequests = async () => {
+  try {
+    const { data, error } = await supabase
+      .from("service_requests")   // VERY IMPORTANT TABLE NAME
+      .select("*")
+      .order("created_at", { ascending: false });
 
-  const { data, error } = await supabase
-    .from("service_requests")
-    .select("*")
-    .order("id", { ascending: false });
+    if (error) {
+      console.error("adminListRequests error:", error);
+      return [];
+    }
 
-  if (error) {
-    console.error("adminListRequests error:", error);
+    return data || [];
+  } catch (err) {
+    console.error("adminListRequests crash:", err);
     return [];
   }
-
-  return data || [];
 };
 
 // ============ ADMIN: STATS ============
