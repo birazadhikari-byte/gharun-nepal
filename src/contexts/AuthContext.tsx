@@ -115,58 +115,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const profile = await fetchProfile(session.user.id);
-          if (profile) {
-            setUser(buildUserFromProfile(profile, session));
-          } else {
-            const metaRole = session.user.user_metadata?.role;
-            const isInternalEmail = session.user.email?.endsWith('@gharunepal.com');
-            const resolvedRole = metaRole ? resolveRole(metaRole) : (isInternalEmail ? 'system' : 'client');
-            
-            const newProfile = {
-              id: session.user.id,
-              full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
-              email: session.user.email,
-              phone: session.user.phone,
-              role: resolvedRole === 'system' ? 'admin' : resolvedRole,
-            };
-            await upsertProfile(newProfile);
-            setUser({
-              id: session.user.id,
-              name: newProfile.full_name,
-              email: session.user.email,
-              phone: session.user.phone,
-              role: resolvedRole,
-              isVerified: isInternalRole(resolvedRole),
-              emailVerified: false,
-            });
-          }
-        }
-      } catch (err) {
-        console.error('Auth init error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  let mounted = true;
 
-    initAuth();
+  const initAuth = async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setUser(null);
-      } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+      if (!mounted) return;
+
+      if (session?.user) {
         const profile = await fetchProfile(session.user.id);
+
+        if (!mounted) return;
+
         if (profile) {
           setUser(buildUserFromProfile(profile, session));
         } else {
           const metaRole = session.user.user_metadata?.role;
           const isInternalEmail = session.user.email?.endsWith('@gharunepal.com');
           const resolvedRole = metaRole ? resolveRole(metaRole) : (isInternalEmail ? 'system' : 'client');
-          
+
           const newProfile = {
             id: session.user.id,
             full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
@@ -174,7 +142,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             phone: session.user.phone,
             role: resolvedRole === 'system' ? 'admin' : resolvedRole,
           };
-          try { await upsertProfile(newProfile); } catch {}
+
+          await upsertProfile(newProfile);
+
+          if (!mounted) return;
+
           setUser({
             id: session.user.id,
             name: newProfile.full_name,
@@ -186,10 +158,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       }
-    });
+    } catch (err) {
+      console.error('Auth init error:', err);
+    } finally {
+      if (mounted) setLoading(false);
+    }
+  };
 
-    return () => subscription.unsubscribe();
-  }, []);
+  initAuth();
+
+  const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    if (!mounted) return;
+
+    if (event === 'SIGNED_OUT') {
+      setUser(null);
+    } else if (session?.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
+      const profile = await fetchProfile(session.user.id);
+
+      if (!mounted) return;
+
+      if (profile) {
+        setUser(buildUserFromProfile(profile, session));
+      }
+    }
+  });
+
+  return () => {
+    mounted = false;
+    subscription.unsubscribe();
+  };
+}, []);
 
   const signInWithPhone = useCallback(async (phone: string) => {
     try {
