@@ -486,4 +486,30 @@ export const createRideRequest = async (payload: any) => {
   } catch {
     return { request_number: 'GN-' + Date.now() }
   }
-}
+}/* =====================================================
+   📜 TERMS GATE HELPERS (SAFE MVP EXPORTS)
+===================================================== */
+
+export const checkTermsAcceptance = async (userId: string) => {
+  try {
+    const { data } = await supabase
+      .from('terms_acceptance')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('terms_version', CURRENT_TERMS_VERSION)
+      .eq('privacy_version', CURRENT_PRIVACY_VERSION)
+      .single();
+
+    return !!data;
+  } catch {
+    return false;
+  }
+};
+
+export const fetchTermsVersionConfig = async () => {
+  // MVP SAFE MODE
+  return {
+    terms_version: CURRENT_TERMS_VERSION,
+    privacy_version: CURRENT_PRIVACY_VERSION,
+  };
+};
