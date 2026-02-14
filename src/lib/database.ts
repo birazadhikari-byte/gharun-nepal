@@ -395,4 +395,30 @@ export const getDocumentSignedUrl = async (
 
   // Return placeholder for now
   return filePath;
+};// =====================================================
+// GHARUN NEPAL - PROVIDER REGISTRATION (MVP SAFE)
+// =====================================================
+
+interface ProviderRegistrationInput {
+  name: string;
+  phone: string;
+  email?: string;
+  service: string;
+  category: string;
+  location: string;
+  description?: string;
+  userId?: string;
+}
+
+export const submitProviderRegistration = async (
+  data: ProviderRegistrationInput
+) => {
+  console.log('🛠 Provider Registration Submitted:', data);
+
+  // MVP SAFE MODE
+  // Later you will save into Supabase table: provider_applications
+
+  return {
+    success: true,
+  };
 };
