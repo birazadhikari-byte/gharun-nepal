@@ -138,4 +138,16 @@ export const fetchProfile = async (userId: string) => {
     console.error("sendWelcomeEmail error:", err);
     return { success: false };
   }
+};// ===============================
+// PASSWORD RESET (MVP SAFE VERSION)
+// ===============================
+export const requestPasswordReset = async (email: string) => {
+  try {
+    console.log("Password reset requested:", email);
+    // MVP placeholder — real email OTP later
+    return { success: true, message: "Reset request sent (MVP mode)" };
+  } catch (err) {
+    console.error("requestPasswordReset error:", err);
+    return { success: false };
+  }
 };
