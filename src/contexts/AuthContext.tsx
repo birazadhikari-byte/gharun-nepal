@@ -332,29 +332,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  const verifyResetOtp = useCallback(async (email: string, code: string) => {
-    try {
-      const result = await verifyResetCode(email, code);
-      if (result?.success && result?.resetToken) {
-        return { success: true, resetToken: result.resetToken };
-      }
-      return { success: false, error: result?.message || 'Invalid code.' };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Verification failed.' };
-    }
-  }, []);
+ const verifyResetOtp = useCallback(async (email: string, code: string) => {
+  try {
+    const result = await verifyResetCode(email, code);
 
-  const confirmPasswordReset = useCallback(async (email: string, resetToken: string, newPassword: string) => {
-    try {
-      const result = await dbResetPassword(email, resetToken, newPassword);
-      if (result?.success) {
-        return { success: true, message: result.message || 'Password reset successfully!' };
-      }
-      return { success: false, error: result?.message || 'Reset failed.' };
-    } catch (err: any) {
-      return { success: false, error: err.message || 'Password reset failed.' };
+    if (result?.success && result?.resetToken) {
+      return {
+        success: true,
+        resetToken: result.resetToken,
+        message: ''   // ✅ FIXED
+      };
     }
-  }, []);
+
+    return {
+      success: false,
+      error: 'Invalid code.'   // ✅ FIXED
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err.message || 'Verification failed.'
+    };
+  }
+}, []);
 
   // ============ PRODUCTION: Email Verification Flow ============
 

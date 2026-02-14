@@ -1,202 +1,215 @@
-import { supabase } from "./supabase";
+import { supabase } from '@/lib/supabase'
 
-/* ===============================
-   CLIENT — CREATE REQUEST
-================================ */
-export const createServiceRequest = async (payload: any) => {
-  const { data, error } = await supabase
-    .from("service_requests")
-    .insert({
-      ...payload,
-      status: "submitted",
-    })
-    .select()
-    .single();
+/* =====================================================
+   PROFILE FUNCTIONS (USED BY AUTHCONTEXT)
+===================================================== */
 
-  if (error) throw error;
-  return data;
-};
-
-/* ===============================
-   CLIENT — GET OWN REQUESTS
-================================ */
-export const fetchServiceRequests = async (client_id: string) => {
-  const { data, error } = await supabase
-    .from("service_requests")
-    .select("*")
-    .eq("client_id", client_id)
-    .order("created_at", { ascending: false });
-
-  if (error) throw error;
-  return data || [];
-};
-
-/* ===============================
-   ADMIN — ALL REQUESTS
-================================ */
-export const adminListRequests = async () => {
-  const { data, error } = await supabase
-    .from("service_requests")
-    .select("*")
-    .order("created_at", { ascending: false });
-
-  if (error) {
-    console.error(error);
-    return [];
-  }
-  return data || [];
-};
-
-/* ===============================
-   ADMIN — UPDATE STATUS
-================================ */
-export const adminUpdateRequest = async (id: string, status: string) => {
-  const { error } = await supabase
-    .from("service_requests")
-    .update({ status })
-    .eq("id", id);
-
-  if (error) throw error;
-};
-
-/* ===============================
-   PROVIDER JOBS
-================================ */
-export const providerJobs = async (provider_id: string) => {
-  const { data, error } = await supabase
-    .from("service_requests")
-    .select("*")
-    .eq("assigned_provider_id", provider_id);
-
-  if (error) throw error;
-  return data || [];
-};/* ===============================
-   PROVIDER DIRECTORY (PUBLIC LIST)
-================================ */
-export const fetchProviders = async () => {
-  try {
-    const { data, error } = await supabase
-      .from("providers")
-      .select("*")
-      .eq("verified", true);
-
-    if (error) {
-      console.error("fetchProviders error:", error);
-      return [];
-    }
-
-    return data || [];
-  } catch (err) {
-    console.error("fetchProviders crash:", err);
-    return [];
-  }
-};// ===============================
-// FETCH USER PROFILE (AUTH)
-// ===============================
 export const fetchProfile = async (userId: string) => {
   try {
     const { data, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
 
-    if (error) {
-      console.error("fetchProfile error:", error);
-      return null;
-    }
-
-    return data;
-  } catch (err) {
-    console.error("fetchProfile crash:", err);
-    return null;
+    if (error) return null
+    return data
+  } catch {
+    return null
   }
-};export const upsertProfile = async (profile: any) => {
+}
+
+export const upsertProfile = async (profile: any) => {
+  try {
+    const { error } = await supabase
+      .from('profiles')
+      .upsert(profile)
+
+    if (error) console.error('upsertProfile error:', error)
+  } catch (err) {
+    console.error('upsertProfile crash:', err)
+  }
+}
+
+/* =====================================================
+   ADMIN — REQUESTS
+===================================================== */
+
+export const adminListRequests = async () => {
   try {
     const { data, error } = await supabase
-      .from("profiles")
-      .upsert(profile)
-      .select()
-      .single();
+      .from('service_requests')
+      .select('*')
+      .order('created_at', { ascending: false })
 
     if (error) {
-      console.error("upsertProfile error:", error);
-      return null;
+      console.error('adminListRequests error:', error)
+      return []
     }
 
-    return data;
+    return data || []
   } catch (err) {
-    console.error("upsertProfile crash:", err);
-    return null;
+    console.error('adminListRequests crash:', err)
+    return []
   }
-};export const sendWelcomeEmail = async (email: string, name?: string) => {
-  try {
-    console.log("Welcome email trigger (MVP):", email);
-    // MVP version — real email system later
-    return { success: true };
-  } catch (err) {
-    console.error("sendWelcomeEmail error:", err);
-    return { success: false };
-  }
-};// ===============================
-// PASSWORD RESET (MVP SAFE VERSION)
-// ===============================
-export const requestPasswordReset = async (email: string) => {
-  try {
-    console.log("Password reset requested:", email);
-    // MVP placeholder — real email OTP later
-    return { success: true, message: "Reset request sent (MVP mode)" };
-  } catch (err) {
-    console.error("requestPasswordReset error:", err);
-    return { success: false };
-  }
-};// ===============================
-// VERIFY RESET OTP (MVP SAFE)
-// ===============================
-export const verifyResetCode = async (email: string, code: string) => {
-  try {
-    console.log("Verify reset code:", email, code);
+}
 
-    // MVP placeholder
-    return {
-      success: true,
-      resetToken: "demo-reset-token",
-    };
+export const adminUpdateRequest = async (id: string, updates: any) => {
+  try {
+    const { error } = await supabase
+      .from('service_requests')
+      .update(updates)
+      .eq('id', id)
+
+    if (error) console.error(error)
   } catch (err) {
-    console.error("verifyResetCode error:", err);
-    return { success: false };
+    console.error(err)
   }
-};// ===============================
-// RESET PASSWORD (MVP SAFE)
-// ===============================
+}
+
+export const adminListAllProviders = async () => {
+  try {
+    const { data } = await supabase
+      .from('providers')
+      .select('*')
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+export const adminGetStats = async () => {
+  try {
+    const { count } = await supabase
+      .from('service_requests')
+      .select('*', { count: 'exact', head: true })
+
+    return { totalRequests: count || 0 }
+  } catch {
+    return null
+  }
+}
+
+/* =====================================================
+   CLIENT — REQUESTS
+===================================================== */
+
+export const createServiceRequest = async (payload: any) => {
+  try {
+    const { data, error } = await supabase
+      .from('service_requests')
+      .insert([payload])
+      .select()
+      .single()
+
+    if (error) {
+      console.error('createServiceRequest error:', error)
+      return null
+    }
+
+    return data
+  } catch (err) {
+    console.error('createServiceRequest crash:', err)
+    return null
+  }
+}
+
+export const fetchClientRequests = async (clientId: string) => {
+  try {
+    const { data } = await supabase
+      .from('service_requests')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+/* =====================================================
+   PROVIDERS DIRECTORY
+===================================================== */
+
+export const fetchProviders = async () => {
+  try {
+    const { data } = await supabase
+      .from('providers')
+      .select('*')
+
+    return data || []
+  } catch {
+    return []
+  }
+}
+
+/* =====================================================
+   EMAIL + AUTH FLOWS (SAFE MVP MOCKS)
+===================================================== */
+
+export const sendWelcomeEmail = async (email: string, name: string) => {
+  console.log('sendWelcomeEmail:', email, name)
+  return { success: true }
+}
+
+export const requestPasswordReset = async (email: string) => {
+  console.log('requestPasswordReset:', email)
+  return { success: true, message: 'Reset code sent' }
+}
+
+export const verifyResetCode = async (email: string, code: string) => {
+  console.log('verifyResetCode:', email, code)
+  return { success: true, resetToken: 'demo-token' }
+}
+
 export const resetPassword = async (
   email: string,
-  resetToken: string,
+  token: string,
   newPassword: string
 ) => {
-  try {
-    console.log("Reset password:", email);
+  console.log('resetPassword:', email)
+  return { success: true, message: 'Password updated' }
+}
 
-    // MVP placeholder
-    return {
-      success: true,
-      message: "Password updated",
-    };
-  } catch (err) {
-    console.error("resetPassword error:", err);
-    return { success: false };
-  }
-};// ===============================
-// EMAIL VERIFICATION (MVP SAFE)
-// ===============================
 export const requestEmailVerification = async (email: string) => {
-  try {
-    console.log("Request email verification:", email);
+  console.log('requestEmailVerification:', email)
+  return { success: true }
+}
 
-    // MVP placeholder
-    return { success: true };
-  } catch (err) {
-    console.error("requestEmailVerification error:", err);
-    return { success: false };
+export const verifyEmailCode = async (email: string, code: string) => {
+  console.log('verifyEmailCode:', email, code)
+  return { verified: true }
+}/* =====================================================
+   EXTRA HELPERS REQUIRED BY DASHBOARDS (SAFE EXPORTS)
+===================================================== */
+
+// Used by ClientDashboard
+export const fetchServiceRequests = async (clientId: string) => {
+  try {
+    const { data } = await supabase
+      .from('service_requests')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false })
+
+    return data || []
+  } catch {
+    return []
   }
-};
+}
+
+// Used by ProviderDashboard
+export const providerJobs = async (providerId: string) => {
+  try {
+    const { data } = await supabase
+      .from('service_requests')
+      .select('*')
+      .eq('provider_id', providerId)
+
+    return data || []
+  } catch {
+    return []
+  }
+}
