@@ -111,4 +111,22 @@ export const fetchProfile = async (userId: string) => {
     console.error("fetchProfile crash:", err);
     return null;
   }
+};export const upsertProfile = async (profile: any) => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .upsert(profile)
+      .select()
+      .single();
+
+    if (error) {
+      console.error("upsertProfile error:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("upsertProfile crash:", err);
+    return null;
+  }
 };
