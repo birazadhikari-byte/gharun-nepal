@@ -90,4 +90,25 @@ export const fetchProviders = async () => {
     console.error("fetchProviders crash:", err);
     return [];
   }
+};// ===============================
+// FETCH USER PROFILE (AUTH)
+// ===============================
+export const fetchProfile = async (userId: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", userId)
+      .single();
+
+    if (error) {
+      console.error("fetchProfile error:", error);
+      return null;
+    }
+
+    return data;
+  } catch (err) {
+    console.error("fetchProfile crash:", err);
+    return null;
+  }
 };
