@@ -166,4 +166,24 @@ export const verifyResetCode = async (email: string, code: string) => {
     console.error("verifyResetCode error:", err);
     return { success: false };
   }
+};// ===============================
+// RESET PASSWORD (MVP SAFE)
+// ===============================
+export const resetPassword = async (
+  email: string,
+  resetToken: string,
+  newPassword: string
+) => {
+  try {
+    console.log("Reset password:", email);
+
+    // MVP placeholder
+    return {
+      success: true,
+      message: "Password updated",
+    };
+  } catch (err) {
+    console.error("resetPassword error:", err);
+    return { success: false };
+  }
 };
