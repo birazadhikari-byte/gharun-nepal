@@ -150,4 +150,20 @@ export const requestPasswordReset = async (email: string) => {
     console.error("requestPasswordReset error:", err);
     return { success: false };
   }
+};// ===============================
+// VERIFY RESET OTP (MVP SAFE)
+// ===============================
+export const verifyResetCode = async (email: string, code: string) => {
+  try {
+    console.log("Verify reset code:", email, code);
+
+    // MVP placeholder
+    return {
+      success: true,
+      resetToken: "demo-reset-token",
+    };
+  } catch (err) {
+    console.error("verifyResetCode error:", err);
+    return { success: false };
+  }
 };
