@@ -294,4 +294,32 @@ export const recordTermsAcceptance = async (
     console.error('recordTermsAcceptance failed:', err);
     return { success: false };
   }
+};// =====================================================
+// GHARUN NEPAL - WHATSAPP NOTIFICATION (SAFE MVP MOCK)
+// =====================================================
+
+export const sendWhatsAppNotification = async (
+  type: string,
+  data: any,
+  phone: string,
+  lang: 'en' | 'np' = 'en',
+  name?: string
+) => {
+  try {
+    console.log('📲 WhatsApp notification:', {
+      type,
+      phone,
+      name,
+      data,
+    });
+
+    // MVP SAFE MODE:
+    // No external API yet — just simulate success
+    // Later you can connect Twilio / WhatsApp Cloud API
+
+    return { success: true };
+  } catch (err) {
+    console.error('sendWhatsAppNotification error:', err);
+    return { success: false };
+  }
 };
