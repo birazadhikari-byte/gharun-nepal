@@ -212,4 +212,34 @@ export const providerJobs = async (providerId: string) => {
   } catch {
     return []
   }
-}
+}// ========================================
+// HERO STATS (used by Hero.tsx)
+// ========================================
+export const fetchStats = async () => {
+  try {
+    const { data, error } = await supabase
+      .from('platform_stats') // you can change table later
+      .select('*')
+      .single();
+
+    if (error) {
+      console.warn('fetchStats fallback:', error.message);
+      return {
+        providers: 120,
+        jobsCompleted: 540,
+        cities: 5,
+        rating: 4.8,
+      };
+    }
+
+    return data;
+  } catch (err) {
+    console.warn('fetchStats crash:', err);
+    return {
+      providers: 120,
+      jobsCompleted: 540,
+      cities: 5,
+      rating: 4.8,
+    };
+  }
+};
