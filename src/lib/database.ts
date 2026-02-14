@@ -263,4 +263,35 @@ export const fetchRequestByNumber = async (requestNumber: string) => {
     console.warn('fetchRequestByNumber crash:', err);
     return null;
   }
+};// ===============================================
+// TERMS ACCEPTANCE (GHARUN NEPAL SECURITY)
+// ===============================================
+
+export const CURRENT_TERMS_VERSION = 'v1';
+export const CURRENT_PRIVACY_VERSION = 'v1';
+
+export const recordTermsAcceptance = async (
+  userId: string,
+  role: string
+) => {
+  try {
+    const { error } = await supabase
+      .from('terms_acceptance')
+      .upsert({
+        user_id: userId,
+        role,
+        terms_version: CURRENT_TERMS_VERSION,
+        privacy_version: CURRENT_PRIVACY_VERSION,
+        accepted_at: new Date().toISOString(),
+      });
+
+    if (error) {
+      console.error('recordTermsAcceptance error:', error);
+    }
+
+    return { success: true };
+  } catch (err) {
+    console.error('recordTermsAcceptance failed:', err);
+    return { success: false };
+  }
 };
