@@ -322,4 +322,77 @@ export const sendWhatsAppNotification = async (
     console.error('sendWhatsAppNotification error:', err);
     return { success: false };
   }
+};// =====================================================
+// GHARUN NEPAL - PROVIDER DOCUMENT SYSTEM (MVP SAFE)
+// =====================================================
+
+export type DocumentType =
+  | 'citizenship_front'
+  | 'citizenship_back'
+  | 'license'
+  | 'profile_photo';
+
+export interface ProviderDocument {
+  id: string;
+  provider_id?: string;
+  document_type: DocumentType;
+  file_name: string;
+  file_path: string;
+  file_size: number;
+  mime_type?: string;
+  verification_status: 'pending' | 'verified' | 'rejected';
+  rejection_reason?: string;
+}
+
+// -----------------------------------------------------
+// Upload provider document
+// -----------------------------------------------------
+export const uploadProviderDocument = async (
+  userId: string,
+  file: File,
+  docType: DocumentType,
+  providerId?: string
+) => {
+  console.log('📄 Upload document:', userId, docType);
+
+  // MVP SAFE MODE
+  // Later connect Supabase Storage
+  return {
+    success: true,
+  };
+};
+
+// -----------------------------------------------------
+// Fetch my documents
+// -----------------------------------------------------
+export const fetchMyDocuments = async (
+  userId: string
+): Promise<ProviderDocument[]> => {
+  console.log('📄 Fetch documents for:', userId);
+
+  // MVP MOCK DATA
+  return [];
+};
+
+// -----------------------------------------------------
+// Delete provider document
+// -----------------------------------------------------
+export const deleteProviderDocument = async (
+  docId: string,
+  filePath: string
+) => {
+  console.log('🗑 Delete document:', docId, filePath);
+  return { success: true };
+};
+
+// -----------------------------------------------------
+// Get signed preview URL
+// -----------------------------------------------------
+export const getDocumentSignedUrl = async (
+  filePath: string
+): Promise<string> => {
+  console.log('🔐 Get signed URL:', filePath);
+
+  // Return placeholder for now
+  return filePath;
 };
