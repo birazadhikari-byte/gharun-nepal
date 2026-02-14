@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { upsertProfile, fetchProfile, sendWelcomeEmail, requestPasswordReset, verifyResetCode, resetPassword as dbResetPassword, requestEmailVerification, verifyEmailCode } from '@/lib/database';
+import {
+  upsertProfile,
+  fetchProfile,
+  sendWelcomeEmail,
+  requestPasswordReset,
+  verifyResetCode,
+  resetPassword,
+  requestEmailVerification,
+  verifyEmailCode
+} from '@/lib/database';
 
 // Public roles visible to users
 export type PublicRole = 'client' | 'provider';
@@ -390,4 +399,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       {children}
     </AuthContext.Provider>
   );
-};
+};const confirmPasswordReset = useCallback(async (
+  email: string,
+  resetToken: string,
+  newPassword: string
+) => {
+  try {
+    const result = await resetPassword(email, resetToken, newPassword);
+
+    if (result?.success) {
+      return { success: true, message: 'Password reset successfully!' };
+    }
+
+    return { success: false, error: 'Reset failed.' };
+  } catch (err: any) {
+    return { success: false, error: err.message || 'Password reset failed.' };
+  }
+}, []);
