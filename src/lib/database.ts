@@ -129,4 +129,13 @@ export const fetchProfile = async (userId: string) => {
     console.error("upsertProfile crash:", err);
     return null;
   }
+};export const sendWelcomeEmail = async (email: string, name?: string) => {
+  try {
+    console.log("Welcome email trigger (MVP):", email);
+    // MVP version — real email system later
+    return { success: true };
+  } catch (err) {
+    console.error("sendWelcomeEmail error:", err);
+    return { success: false };
+  }
 };
