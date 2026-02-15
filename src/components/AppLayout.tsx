@@ -293,13 +293,13 @@ const AppLayout: React.FC = () => {
         if (!user || user.role !== 'client') {
           return renderGuestHome();
         }
-        return <ClientDashboard onGoHome={handleGoHome} onLogout={handleLogout} />;
+        return <ClientDashboard />;
 
       case 'provider-dashboard':
         if (!user || user.role !== 'provider') {
           return renderGuestHome();
         }
-        return <ProviderDashboard onGoHome={handleGoHome} onLogout={handleLogout} />;
+        return <ProviderDashboard />
 
       // INTERNAL LOGIN (hidden from public)
       case 'internal-login':

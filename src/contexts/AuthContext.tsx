@@ -36,7 +36,9 @@ interface AuthContextType {
   user: GharunUser | null;
   loading: boolean;
 
+
   signOut: () => Promise<void>;
+  signInWithEmail: (email: string, password: string) => Promise<any>;
 
   requestPasswordReset: (email: string) => Promise<any>;
   verifyResetCode: (email: string, code: string) => Promise<any>;
@@ -128,7 +130,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   /* =====================================================
      SIGN OUT
   ===================================================== */
+const signInWithEmail = useCallback(async (email: string, password: string) => {
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { success: true };
+}, []);
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setUser(null);
@@ -192,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     user,
     loading,
     signOut,
+    signInWithEmail,
 
     requestPasswordReset: handleRequestPasswordReset,
     verifyResetCode: handleVerifyResetCode,
