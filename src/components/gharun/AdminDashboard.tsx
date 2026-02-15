@@ -1,13 +1,21 @@
 import React, { useEffect, useState } from "react";
-import { adminListRequests, adminUpdateRequest } from "@/lib/database";
+import {
+  adminListRequests,
+  adminUpdateRequest,
+  adminListAllProviders
+} from "@/lib/database";
 
 const AdminDashboard: React.FC = () => {
   const [requests, setRequests] = useState<any[]>([]);
+  const [providers, setProviders] = useState<any[]>([]);
 
   const load = async () => {
-    const data = await adminListRequests();
-    setRequests(data);
-  };
+  const req = await adminListRequests();
+  setRequests(req);
+
+  const prov = await adminListAllProviders();
+  setProviders(prov);
+};
 
   useEffect(() => {
     load();
@@ -19,19 +27,71 @@ const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="p-6">
-      <h1 className="text-xl font-bold mb-4">Admin Dashboard</h1>
+    <div className="p-6 space-y-6">
+      <h1 className="text-2xl font-bold">Admin Control Center</h1>
 
-      {requests.map((r) => (
-        <div key={r.id} className="border p-3 mb-2">
-          <p>{r.request_number}</p>
-          <p>{r.status}</p>
+      {/* CLIENT REQUEST MONITOR */}
+      <div>
+        <h2 className="font-semibold mb-3">Client Requests</h2>
 
-          <button onClick={() => update(r.id, "assigned")}>Assign</button>
-          <button onClick={() => update(r.id, "in_progress")}>Start</button>
-          <button onClick={() => update(r.id, "completed")}>Complete</button>
-        </div>
-      ))}
+        {requests.map((r) => (
+          <div
+            key={r.id}
+            className="border rounded-lg p-4 mb-3 flex justify-between items-center"
+          >
+            <div>
+              <p className="font-medium">{r.request_number}</p>
+              <p className="text-sm text-gray-500">Status: {r.status}</p>
+            </div>
+
+            <div className="space-x-2">
+              <button
+                className="px-3 py-1 bg-blue-500 text-white rounded"
+                onClick={() => update(r.id, "assigned")}
+              >
+                Assign
+              </button>
+
+              <button
+                className="px-3 py-1 bg-yellow-500 text-white rounded"
+                onClick={() => update(r.id, "in_progress")}
+              >
+                Start
+              </button>
+
+              <button
+                className="px-3 py-1 bg-green-600 text-white rounded"
+                onClick={() => update(r.id, "completed")}
+              >
+                Complete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* PROVIDER MONITORING */}
+      <div>
+        <h2 className="font-semibold mb-3">Provider Monitoring</h2>
+
+        {providers.map((p) => (
+          <div
+            key={p.id}
+            className="border rounded-lg p-4 mb-3 flex justify-between"
+          >
+            <div>
+              <p className="font-medium">{p.name || "Provider"}</p>
+              <p className="text-sm text-gray-500">
+                Status: {p.verification_status || "pending"}
+              </p>
+            </div>
+
+            <button className="px-3 py-1 bg-green-600 text-white rounded">
+              Approve
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
